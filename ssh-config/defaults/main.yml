@@ -1,0 +1,5 @@
+ssh_root_login: false
+
+update_iptables: false
+
+iptables_path: "/etc/iptables/rules.v4"

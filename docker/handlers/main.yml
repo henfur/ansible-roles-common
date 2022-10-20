@@ -1,0 +1,9 @@
+- name: stop docker
+  ansible.builtin.systemd:
+    name: docker
+    state: stopped
+
+- name: start docker
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted

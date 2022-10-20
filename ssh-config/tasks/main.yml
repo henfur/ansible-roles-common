@@ -1,0 +1,39 @@
+- name: Set ssh port
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#Port 22"
+    line: "Port {{ ssh_port }}"
+
+- name: Disable root login
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#PermitRootLogin prohibit-password"
+    line: "PermitRootLogin no"
+  when: not ssh_root_login
+
+- name: Disable password authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^#PasswordAuthentication yes"
+    line: "PasswordAuthentication no"
+
+- name: Restart sshd
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+
+- name: Add ssh port to iptables
+  ansible.builtin.iptables:
+    table: filter
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ ssh_port }}"
+    jump: ACCEPT
+    ctstate: NEW
+  when: update_iptables
+
+- name: Save current iptables
+  community.general.iptables_state:
+    state: saved
+    path: "{{ iptables_path }}"
+  when: update_iptables

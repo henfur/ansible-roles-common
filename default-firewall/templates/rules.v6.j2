@@ -1,0 +1,9 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [1:56]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -s ::1/128 ! -i lo -j REJECT --reject-with icmp6-port-unreachable
+-A INPUT -p ipv6-icmp -j ACCEPT
+-A INPUT -m state --state ESTABLISHED -j ACCEPT
+COMMIT

@@ -1,0 +1,27 @@
+- name: Set umask to 077
+  ansible.builtin.lineinfile:
+    line: "umask 077"
+    path: /etc/profile
+    insertafter: EOF
+
+- name: Create modprobe aliases file
+  ansible.builtin.file:
+    state: touch
+    path: /etc/modprobe.d/aliases
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Disable net-pf-10 ipv6
+  ansible.builtin.lineinfile:
+    line: alias net-pf-10 off
+    regexp: "alias net-pf-10 ipv6"
+    path: /etc/modprobe.d/aliases
+  when: disable_ipv6
+
+- name: Disable ipv6
+  ansible.builtin.lineinfile:
+    line: alias net-pf-10 off
+    path: /etc/modprobe.d/aliases
+    insertafter: "alias net-pf-10 off"
+  when: disable_ipv6

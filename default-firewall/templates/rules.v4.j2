@@ -1,0 +1,12 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state ESTABLISHED -j ACCEPT
+-A INPUT -m conntrack --ctstate ESTABLISHED -j ACCEPT
+-A INPUT -m conntrack --ctstate INVALID -j DROP
+-A INPUT -i lo -m comment --comment "Localhost input" -j ACCEPT
+-A INPUT -s 127.0.0.0/8 ! -i lo -j REJECT --reject-with icmp-port-unreachable
+-A INPUT -p icmp -m state --state NEW -m icmp --icmp-type 8 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport {{ ssh_port }} -m comment --comment "Allow SSH" -j ACCEPT
+COMMIT

@@ -1,0 +1,13 @@
+- name: Set the hostname
+  ansible.builtin.hostname:
+    name: "{{ system_hostname }}"
+
+- name: Change user password
+  ansible.builtin.user:
+    name: "{{ remote_system_user }}"
+    password: "{{ remote_system_user_password_hash }}"
+
+- name: Set root password
+  ansible.builtin.user:
+    name: "root"
+    password: "{{ root_password_hash }}"

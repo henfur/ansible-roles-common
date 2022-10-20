@@ -1,0 +1,88 @@
+---
+
+- name: Remove existing packages
+  ansible.builtin.apt:
+    state: absent
+    pkg:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+
+- name: Install required packages
+  ansible.builtin.apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    update_cache: true
+
+- name: Install fuse-overlayfs
+  ansible.builtin.apt:
+    pkg:
+      - fuse-overlayfs
+    update_cache: true
+  when: lxc
+
+- name: Add docker gpg key
+  ansible.builtin.get_url:
+    url: "https://download.docker.com/linux/ubuntu/gpg"
+    dest: "/usr/share/keyrings/docker-archive-keyring.gpg"
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Add docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ arch }} signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ubuntu_release }} stable"
+    state: present
+
+- name: Create docker config folder
+  ansible.builtin.file:
+    path: /etc/docker
+    directory: true
+    owner: root
+    group: root
+    mode: 0775
+  when: lxc
+
+- name: Setup docker to use fuse-overlayfs
+  ansible.builtin.template:
+    src: templates/etc/docker/daemon.json
+    dest: /etc/docker/daemon.json
+    mode: 0644
+  when: lxc
+
+- name: Install docker engine
+  ansible.builtin.apt:
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose
+    update_cache: true
+
+- name: Add docker user
+  ansible.builtin.user:
+    name: "{{ docker_user }}"
+    group: docker
+
+- name: Restart docker daemon
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+
+- name: Deploy portainer
+  community.docker.docker_container:
+    image: "portainer/portainer-ce:{{ portainer_image_version }}"
+    name: portainer
+    ports:
+      - 8000:8000
+      - 9443:9443
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "{{ portainer_data_path }}:/data"
+  when: install_portainer
