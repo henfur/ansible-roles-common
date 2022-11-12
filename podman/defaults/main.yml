@@ -4,10 +4,6 @@
 # https://www.portainer.io/
 install_portainer: false
 
-# If docker is to be installed in an LXC container
-# see: # https://docs.docker.com/storage/storagedriver/overlayfs-driver/
-lxc: false
-
 # System architecture (default: amd64)
 arch: "amd64"
 
