@@ -55,18 +55,6 @@
     home: "/home/{{ container_user }}"
   when: rootless
 
-- name: Update /etc/subuid
-  ansible.builtin.lineinfile:
-    path: /etc/subuid
-    line: "{{ container_user }}:{{ container_user_uid }}:{{ uid_range }}"
-    insertafter: EOF
-
-- name: Update /etc/subgid
-  ansible.builtin.lineinfile:
-    path: /etc/subgid
-    line: "{{ container_user }}:{{ container_user_uid }}:{{ uid_range }}"
-    insertafter: EOF
-
 - name: Enable lingering for container user
   ansible.builtin.command: "loginctl enable-linger {{ container_user_linux_uid }}"
   when: rootless
