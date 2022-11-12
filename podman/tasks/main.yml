@@ -1,0 +1,85 @@
+---
+
+- name: Remove existing packages
+  ansible.builtin.apt:
+    state: absent
+    pkg:
+      - podman
+
+- name: Install required packages
+  ansible.builtin.apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - acl
+    update_cache: true
+
+- name: Install rootless extras and requirements
+  ansible.builtin.apt:
+    pkg:
+      - uidmap
+      - slirp4netns
+      - fuse-overlayfs
+      - systemd-container
+    update_cache: true
+  when: rootless
+
+- name: Install podman
+  ansible.builtin.apt:
+    pkg:
+      - podman
+    update_cache: true
+
+- name: Increase UID range
+  ansible.posix.sysctl:
+    name: user.max_user_namespaces
+    value: 15000
+    reload: true
+    state: present
+  when: rootless
+
+- name: Add container group
+  ansible.builtin.group:
+    name: container
+    state: present
+  when: rootless
+
+- name: Add container user
+  ansible.builtin.user:
+    name: "{{ container_user }}"
+    group: container
+    shell: "/bin/bash"
+    create_home: true
+    home: "/home/{{ container_user }}"
+  when: rootless
+
+- name: Update /etc/subuid
+  ansible.builtin.lineinfile:
+    path: /etc/subuid
+    line: "{{ container_user }}:{{ container_user_uid }}:{{ uid_range }}"
+    insertafter: EOF
+
+- name: Update /etc/subgid
+  ansible.builtin.lineinfile:
+    path: /etc/subgid
+    line: "{{ container_user }}:{{ container_user_uid }}:{{ uid_range }}"
+    insertafter: EOF
+
+- name: Enable lingering for container user
+  ansible.builtin.command: "loginctl enable-linger {{ container_user_linux_uid }}"
+  when: rootless
+
+- name: Deploy portainer
+  containers.podman.podman_container:
+    image: "portainer/portainer-ce:{{ portainer_image_version }}"
+    name: portainer
+    ports:
+      - 8000:8000
+      - 9443:9443
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "{{ portainer_data_path }}:/data"
+  when: install_portainer
